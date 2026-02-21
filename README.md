@@ -14,8 +14,8 @@ It is an opinonated framework that can help you acheive a well deployed fabric a
  * Prestage switch IDs. [See Role](https://github.com/loneMtnTech/aci_fabric_manager/tree/master/roles/switch_provision)
 
 ## Requirements
-* ansible v2.9 or later
-* python 3
+* ansible v13.0 or later
+* python 3.12 or later
 * ACI user with certificate auth enables
     * https://docs.ansible.com/ansible/latest/scenario_guides/guide_aci.html#signature-based-authentication-using-certificates
 
