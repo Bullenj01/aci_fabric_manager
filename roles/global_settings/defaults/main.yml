@@ -1,5 +1,5 @@
 ---
-mcp: enabled #miscabling protocol
+mcp: enabled # miscabling protocol
 mcpPass: "asdj;f;fjgia;ijdfg"
 domainValidation: "yes"
 remoteEpLearning: "no"

@@ -27,6 +27,13 @@ Installation via galaxy.  Use --force to upgrade to latest version
 
 ```ansible-galaxy collection install lonemtntech.aci_fabric_manager```
 
+Alternatively, install all dependencies using the provided requirements files:
+
+```bash
+pip install -r requirements.txt
+ansible-galaxy collection install -r requirements.yml
+```
+
 ## Variables
 
 **Required Variable**

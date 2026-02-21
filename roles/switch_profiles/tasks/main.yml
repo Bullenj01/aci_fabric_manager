@@ -1,71 +1,74 @@
 ---
 - name: Verify variables are properly filled out
-  assert:
+  ansible.builtin.assert:
     that:
       - leafStart
       - leafEnd
-    quiet: yes
-- name: Create apic connection profile
-  set_fact:
+    quiet: true
+
+- name: Create APIC connection profile and intent mapping
+  ansible.builtin.set_fact:
     login: &aci_login
       host: "{{ ansible_host }}"
       use_proxy: "{{ apic_proxy | default('no') }}"
       validate_certs: "{{ apic_validate_certs | default('no') }}"
       use_ssl: "{{ apic_use_ssl | default('yes') }}"
       private_key: "{{ playbook_dir }}/{{ varprompt_private_key }}"
-      #certificate_name: admin
     intentMap:
       add: present
       remove: absent
 
-- name: |
-    "{{ intent }} INTERFACE PROFILES
-    Fabric->Access Policies->Interfaces->Leaf Interfaces->Profiles"
+- name: "VPC INTERFACE PROFILES (Fabric->Access Policies->Interfaces->Leaf Interfaces->Profiles) ({{ intent }})"
   cisco.aci.aci_interface_policy_leaf_profile:
     <<: *aci_login
-    leaf_interface_profile: "{{ '%s-%s' | format(item,item+1) }}"
+    leaf_interface_profile: "{{ '%s-%s' | format(item, item + 1) }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1,2)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1, 2) | list }}"
   loop_control:
-    label: "{{ intent }} interface profile {{ '%s-%s' | format(item,item+1) }}"
-- cisco.aci.aci_interface_policy_leaf_profile:
+    label: "interface profile {{ '%s-%s' | format(item, item + 1) }} ({{ intent }})"
+
+- name: "SINGLE INTERFACE PROFILES (Fabric->Access Policies->Interfaces->Leaf Interfaces->Profiles) ({{ intent }})"
+  cisco.aci.aci_interface_policy_leaf_profile:
     <<: *aci_login
     leaf_interface_profile: "{{ item | string }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1) | list }}"
   loop_control:
-    label: "{{ intent }} interface profile {{ item }}"
+    label: "interface profile {{ item }} ({{ intent }})"
 
-- name: |
-    "{{ intent }} SWITCH PROFILES
-    Fabric->Access Policies->Switches->Leaf Switches->Profiles"
+- name: "VPC SWITCH PROFILES (Fabric->Access Policies->Switches->Leaf Switches->Profiles) ({{ intent }})"
   cisco.aci.aci_switch_policy_leaf_profile:
     <<: *aci_login
-    leaf_profile: "{{ '%s-%s' | format(item,item+1) }}"
+    leaf_profile: "{{ '%s-%s' | format(item, item + 1) }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1,2)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1, 2) | list }}"
   loop_control:
-    label: "{{ intent }} {{ '%s-%s' | format(item,item+1) }} policy"
-- cisco.aci.aci_switch_policy_leaf_profile:
+    label: "{{ '%s-%s' | format(item, item + 1) }} policy ({{ intent }})"
+
+- name: "SINGLE SWITCH PROFILES (Fabric->Access Policies->Switches->Leaf Switches->Profiles) ({{ intent }})"
+  cisco.aci.aci_switch_policy_leaf_profile:
     <<: *aci_login
     leaf_profile: "{{ item | string }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1) | list }}"
   loop_control:
-    label: "{{ intent }} {{ item | string }} policy"
-- name: "{{ intent }} SWITCH PROFILE to LEAFS"
+    label: "{{ item | string }} policy ({{ intent }})"
+
+- name: "Bind VPC SWITCH PROFILE to LEAFS"
   cisco.aci.aci_switch_leaf_selector:
     <<: *aci_login
-    leaf_profile: "{{ '%s-%s' | format(item,item+1) }}"
-    leaf: "{{ '%s-%s' | format(item,item+1) }}"
-    leaf_node_blk: "{{ '%s-%s' | format(item,item+1) }}"
+    leaf_profile: "{{ '%s-%s' | format(item, item + 1) }}"
+    leaf: "{{ '%s-%s' | format(item, item + 1) }}"
+    leaf_node_blk: "{{ '%s-%s' | format(item, item + 1) }}"
     from: "{{ item }}"
     to: "{{ item + 1 }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1,2)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1, 2) | list }}"
   loop_control:
-    label: "{{ intent }} switch profile {{ '%s-%s' | format(item,item+1) }} to nodes {{ item }} and {{ item + 1 }}"
-- cisco.aci.aci_switch_leaf_selector:
+    label: "switch profile {{ '%s-%s' | format(item, item + 1) }} to nodes {{ item }} and {{ item + 1 }} ({{ intent }})"
+
+- name: "Bind SINGLE SWITCH PROFILE to LEAF"
+  cisco.aci.aci_switch_leaf_selector:
     <<: *aci_login
     leaf_profile: "{{ item | string }}"
     leaf: "{{ item | string }}"
@@ -73,29 +76,31 @@
     from: "{{ item }}"
     to: "{{ item }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1) | list }}"
   loop_control:
-    label: "{{ intent }} switch profile {{ item | string }} to node {{ item }}"
-- name: "{{ intent }} INTERFACE PROFILE to SWITCH PROFILE"
+    label: "switch profile {{ item | string }} to node {{ item }} ({{ intent }})"
+
+- name: "Bind VPC INTERFACE PROFILE to SWITCH PROFILE"
   cisco.aci.aci_interface_selector_to_switch_policy_leaf_profile:
     <<: *aci_login
-    leaf_profile: "{{ '%s-%s' | format(item,item+1) }}"
-    interface_selector: "{{ '%s-%s' | format(item,item+1) }}"
+    leaf_profile: "{{ '%s-%s' | format(item, item + 1) }}"
+    interface_selector: "{{ '%s-%s' | format(item, item + 1) }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1,2)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1, 2) | list }}"
   loop_control:
-    label: "{{ intent }} {{ 'int profile %s-%s to switch profile %s-%s' | format(item,item+1,item,item+1) }}"
-- cisco.aci.aci_interface_selector_to_switch_policy_leaf_profile:
+    label: "int profile {{ item }}-{{ item + 1 }} to switch profile {{ item }}-{{ item + 1 }} ({{ intent }})"
+
+- name: "Bind SINGLE INTERFACE PROFILE to SWITCH PROFILE"
+  cisco.aci.aci_interface_selector_to_switch_policy_leaf_profile:
     <<: *aci_login
     leaf_profile: "{{ item | string }}"
     interface_selector: "{{ item | string }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ range(leafStart,leafEnd + 1)|list }}"
+  loop: "{{ range(leafStart, leafEnd + 1) | list }}"
   loop_control:
-    label: "{{ intent }} int profile {{ item }} to switch profile {{ item }}"
-- name: |
-    "FEX configuration
-    Fabric->Access Policies->Interfaces->Leaf Interfaces->Profiles"
-  include_tasks:
+    label: "int profile {{ item }} to switch profile {{ item }} ({{ intent }})"
+
+- name: "Include FEX configuration (Fabric->Access Policies->Interfaces->Leaf Interfaces->Profiles)"
+  ansible.builtin.include_tasks:
     file: fex.yml
   when: fexLeaf

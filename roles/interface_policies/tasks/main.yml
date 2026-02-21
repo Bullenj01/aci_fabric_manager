@@ -1,19 +1,17 @@
 ---
-- name: Create apic connection profile
-  set_fact:
+- name: Create APIC connection profile and intent mapping
+  ansible.builtin.set_fact:
     login: &aci_login
       host: "{{ ansible_host }}"
       use_proxy: "{{ apic_proxy | default('no') }}"
       validate_certs: "{{ apic_validate_certs | default('no') }}"
       use_ssl: "{{ apic_use_ssl | default('yes') }}"
       private_key: "{{ playbook_dir }}/{{ varprompt_private_key }}"
-      #certificate_name: admin
     intentMap:
       add: present
       remove: absent
-- name: |
-    "{{ intent }} INTERFACE POLCIES
-    Fabric->Access Policies->Policies->Interface"
+
+- name: "CDP INTERFACE POLICIES (Fabric->Access Policies->Policies->Interface) ({{ intent }})"
   cisco.aci.aci_interface_policy_cdp:
     <<: *aci_login
     cdp_policy: "cdp-{{ item }}"
@@ -21,24 +19,30 @@
     state: "{{ intentMap[intent] }}"
   loop: ["true", "false"]
   loop_control:
-    label: "{{ intent }} cdp-{{ item }} policy"
-- cisco.aci.aci_interface_policy_lldp:
+    label: "cdp-{{ item }} policy ({{ intent }})"
+
+- name: "LLDP INTERFACE POLICIES ({{ intent }})"
+  cisco.aci.aci_interface_policy_lldp:
     <<: *aci_login
     lldp_policy: "lldp-{{ item }}"
     receive_state: "{{ item }}"
     state: "{{ intentMap[intent] }}"
   loop: ["true", "false"]
   loop_control:
-    label: "{{ intent }} lldp-{{ item }} policy"
-- cisco.aci.aci_interface_policy_mcp:
+    label: "lldp-{{ item }} policy ({{ intent }})"
+
+- name: "MCP INTERFACE POLICIES ({{ intent }})"
+  cisco.aci.aci_interface_policy_mcp:
     <<: *aci_login
     mcp: "mcp-{{ item }}"
     admin_state: "{{ item }}"
     state: "{{ intentMap[intent] }}"
   loop: ["true", "false"]
   loop_control:
-    label: "{{ intent }} mcp-{{ item }} policy"
-- cisco.aci.aci_rest:
+    label: "mcp-{{ item }} policy ({{ intent }})"
+
+- name: "LINK LEVEL INTERFACE POLICIES ({{ intent }})"
+  cisco.aci.aci_rest:
     <<: *aci_login
     method: post
     path: "/api/node/mo/uni/infra/hintfpol-{{ item }}.json"
@@ -47,11 +51,13 @@
         attributes:
           name: "{{ item }}"
           speed: "{{ 'inherit' if item == 'auto' else item }}"
-          status: "{{ 'deleted' if intent == 'remove' }}"
+          status: "{{ 'deleted' if intent == 'remove' else omit }}"
   loop: [auto, 1G, 10G]
   loop_control:
-    label: "{{ intent }} link policy {{ item }}"
-- cisco.aci.aci_rest:
+    label: "link policy {{ item }} ({{ intent }})"
+
+- name: "STP INTERFACE POLICIES (BPDU Guard) ({{ intent }})"
+  cisco.aci.aci_rest:
     <<: *aci_login
     method: post
     path: "/api/node/mo/uni/infra/ifPol-bpdu-guard-{{ item }}.json"
@@ -62,17 +68,13 @@
           ctrl: bpdu-guard
   loop: ["true", "false"]
   loop_control:
-    label: "{{ intent }} stp policy bpdu-guard-{{ item }}"
-#INT POLICY GROUPS
-#
-#
-- name: |
-    "{{ intent }} INTERFACE POLICY GROUPS
-    Fabric->Access Policies->Policies->Leaf Interfaces->Policy Groups"
+    label: "stp policy bpdu-guard-{{ item }} ({{ intent }})"
+
+- name: "INTERFACE POLICY GROUPS (Fabric->Access Policies->Policies->Leaf Interfaces->Policy Groups) ({{ intent }})"
   cisco.aci.aci_interface_policy_leaf_policy_group:
     <<: *aci_login
     policy_group: "{{ item.name }}"
-    description: "{{ item.description|default(omit) }}"
+    description: "{{ item.description | default(omit) }}"
     cdp_policy: "{{ item.cdp_policy }}"
     lldp_policy: "{{ item.lldp_policy }}"
     mcp_policy: "{{ item.mcp_policy }}"
@@ -83,4 +85,4 @@
     state: "{{ intentMap[intent] }}"
   loop: "{{ intPolicyGroups }}"
   loop_control:
-    label: "{{ intent }} interface policy {{ item.name }}"
+    label: "interface policy {{ item.name }} ({{ intent }})"

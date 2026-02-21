@@ -1,12 +1,21 @@
-## Examples
-The framework deploys one of the most common, but not  only, types of access topologies.  It will create a switch profile and interface profile of the same name for both single switches and vpc pairs.  It assumes an odd-even sequential relationship for vpc pairs
+# Examples and Use Cases
 
-![concept](../images/fabric_policies.JPG)
+This collection provides a framework for deploying common Cisco ACI access topologies. It simplifies the creation of switch and interface profiles for both standalone switches and VPC pairs.
 
-#### Below depicts deployment with a leaf range of 101-106 with FEXs on 101 and 103
+## Conceptual Framework
+The framework assumes a standardized naming convention and sequential relationship for VPC pairs (typically odd-even numbering).
 
-![Switch and Interface Profiles](../images/switch_profiles.JPG)
+![ACI Fabric Access Policy Concept](../images/fabric_policies.JPG)
 
-#### once deployed you can add a new server by going to the Interface Profile and creating an new Interface Selector
+## Standard Deployment Example
+The example below demonstrates a deployment for a leaf switch range of 101-106, including FEX (Fabric Extender) configurations on switches 101 and 103.
 
-![IntSel](../images/intSel.JPG)
+![Switch and Interface Profiles Example](../images/switch_profiles.JPG)
+
+## Operational Usage
+Once the base fabric access policies are deployed, operational tasks like adding a new server are streamlined. You can simply go to the corresponding Interface Profile and create a new Interface Selector.
+
+![Interface Selector Configuration](../images/intSel.JPG)
+
+## Usage with Playbooks
+Refer to the main [README.md](../README.md) for detailed variable definitions and example playbook structure.

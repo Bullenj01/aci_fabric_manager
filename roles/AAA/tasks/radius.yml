@@ -1,25 +1,23 @@
 ---
-- name: Verify proper varibles
-  assert:
+- name: Verify proper variables for Radius
+  ansible.builtin.assert:
     that:
       - radiusSrvs
     quiet: true
-- name: Create apic connection profile
-  set_fact:
+
+- name: Create APIC connection profile and intent mapping
+  ansible.builtin.set_fact:
     login: &aci_login
       host: "{{ ansible_host }}"
       use_proxy: "{{ apic_proxy | default('no') }}"
       validate_certs: "{{ apic_validate_certs | default('no') }}"
       use_ssl: "{{ apic_use_ssl | default('yes') }}"
       private_key: "{{ playbook_dir }}/{{ varprompt_private_key }}"
-      #certificate_name: admin
     intentMap:
       add: present
       remove: absent
 
-- name: |
-    "{{ intent }} Radius Server
-    Admin->Authentication->RADIUS"
+- name: "Radius Server (Admin->Authentication->RADIUS) ({{ intent }})"
   cisco.aci.aci_rest:
     <<: *aci_login
     path: "/api/node/mo/uni/userext/radiusext/radiusprovider-{{ item | string }}.json"
@@ -32,16 +30,15 @@
           key: "{{ radiusPwd }}"
           status: "{{ 'deleted' if intent == 'remove' }}"
         children:
-        - aaaRsSecProvToEpg:
-            attributes:
-              tDn: "uni/tn-mgmt/mgmtp-default/oob-{{ oobEpg }}"
-            children: []
+          - aaaRsSecProvToEpg:
+              attributes:
+                tDn: "uni/tn-mgmt/mgmtp-default/oob-{{ oobEpg }}"
+              children: []
   loop: "{{ radiusSrvs }}"
   loop_control:
-    label: "{{ intent }} radius srv {{ item | string }}"
-- name: |
-    "{{ intent }} default auth to radius
-    Admin->Authentication"
+    label: "radius srv {{ item | string }} ({{ intent }})"
+
+- name: "default authentication to radius (Admin->Authentication) ({{ intent }})"
   cisco.aci.aci_rest:
     <<: *aci_login
     path: "/api/node/mo/uni/userext/authrealm/defaultauth.json"
@@ -50,8 +47,8 @@
       aaaDefaultAuth:
         attributes:
           realm: radius
-- name: |
-    "confirm fallback domain is set to local auth"
+
+- name: Confirm fallback domain is set to local authentication
   cisco.aci.aci_rest:
     <<: *aci_login
     path: "/api/node/mo/uni/userext/logindomain-fallback/domainauth.json"
@@ -61,9 +58,8 @@
         attributes:
           realm: local
   when: intent == "add"
-- name: |
-    "default auth to local
-    Admin->Authentication"
+
+- name: Set default authentication to local (Admin->Authentication)
   cisco.aci.aci_rest:
     <<: *aci_login
     path: "/api/node/mo/uni/userext/authrealm/defaultauth.json"

@@ -1,29 +1,27 @@
 ---
-- name: Create apic connection profile
-  set_fact:
+- name: Create APIC connection profile and intent mapping
+  ansible.builtin.set_fact:
     login: &aci_login
       host: "{{ ansible_host }}"
       use_proxy: "{{ apic_proxy | default('no') }}"
       validate_certs: "{{ apic_validate_certs | default('no') }}"
       use_ssl: "{{ apic_use_ssl | default('yes') }}"
       private_key: "{{ playbook_dir }}/{{ varprompt_private_key }}"
-      #certificate_name: admin
     intentMap:
       add: present
       remove: absent
 
-- name: |
-    "{{ intent }} VLAN POOLS
-    Fabric->Access Policies->Pools"
+- name: "VLAN POOLS (Fabric->Access Policies->Pools) ({{ intent }})"
   cisco.aci.aci_vlan_pool:
     <<: *aci_login
     pool: "{{ item.name }}"
     pool_allocation_mode: "{{ item.alloc }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ vlanPools  }}"
+  loop: "{{ vlanPools }}"
   loop_control:
-    label: "{{ intent }} vlan pool {{ item.name }}"
-- name: "{{ intent }} VLANS to POOLS"
+    label: "vlan pool {{ item.name }} ({{ intent }})"
+
+- name: "VLANS to POOLS ({{ intent }})"
   cisco.aci.aci_vlan_pool_encap_block:
     <<: *aci_login
     pool: "{{ item.0.name }}"
@@ -32,54 +30,51 @@
     block_start: "{{ item.1.blockStart }}"
     block_end: "{{ item.1.blockEnd }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ vlanPools|subelements('vlans') }}"
+  loop: "{{ vlanPools | subelements('vlans') }}"
   loop_control:
-    label: >-
-      "{{ intent }} vlan  {{ item.1.blockStart }}
-      to {{ item.1.blockEnd }} to {{ item.0.name }} vlan pool"
-- name: |
-    "{{ intent }} DOMAINS
-    Fabric->Access Policies->Pysical and External Domains"
+    label: "vlan {{ item.1.blockStart }} to {{ item.1.blockEnd }} to {{ item.0.name }} vlan pool ({{ intent }})"
+
+- name: "DOMAINS (Fabric->Access Policies->Physical and External Domains) ({{ intent }})"
   cisco.aci.aci_domain:
     <<: *aci_login
     domain: "{{ item.name }}"
     domain_type: "{{ item.domain_type }}"
-    vm_provider: "{{ item.vm_provider|default(omit) }}"
+    vm_provider: "{{ item.vm_provider | default(omit) }}"
     state: "{{ intentMap[intent] }}"
   loop: "{{ domains }}"
   loop_control:
-    label: "{{ intent }} DOMAIN {{ item.name }}"
-- name: |
-    "{{ intent }} AEPS
-    Fabric->Access Policies->Policies->Global->Attachable Access Entity Profiles"
+    label: "DOMAIN {{ item.name }} ({{ intent }})"
+
+- name: "AEPS (Fabric->Access Policies->Policies->Global->Attachable Access Entity Profiles) ({{ intent }})"
   cisco.aci.aci_aep:
     <<: *aci_login
     aep: "{{ item.name }}"
     state: "{{ intentMap[intent] }}"
   loop: "{{ aeps }}"
   loop_control:
-    label: "{{ intent }} aep {{ item.name }}"
+    label: "aep {{ item.name }} ({{ intent }})"
 
-- name: "{{ intent }} AEP to DOMAINS"
+- name: "Bind AEP to DOMAINS"
   cisco.aci.aci_aep_to_domain:
     <<: *aci_login
     aep: "{{ item.0.name }}"
     domain: "{{ item.1.name }}"
     domain_type: "{{ item.1.domain_type }}"
-    vm_provider: "{{ item.1.vm_provider|default(omit) }}"
+    vm_provider: "{{ item.1.vm_provider | default(omit) }}"
     state: "{{ intentMap[intent] }}"
-  loop: "{{ aeps|subelements('domains') }}"
+  loop: "{{ aeps | subelements('domains') }}"
   loop_control:
-    label: "connecting {{ item.0.name }} to  {{ item.1.name }} domain"
-- name: "{{ intent }} DOMAINS to VLAN POOLS"
+    label: "connecting {{ item.0.name }} to {{ item.1.name }} domain"
+
+- name: "Bind DOMAINS to VLAN POOLS"
   cisco.aci.aci_domain_to_vlan_pool:
     <<: *aci_login
     domain: "{{ item.name }}"
     domain_type: "{{ item.domain_type }}"
     pool: "{{ item.vlan.name }}"
     pool_allocation_mode: "{{ item.vlan.alloc }}"
-    vm_provider: "{{ item.vm_provider|default(omit) }}"
+    vm_provider: "{{ item.vm_provider | default(omit) }}"
     state: "{{ intentMap[intent] }}"
   loop: "{{ domains }}"
   loop_control:
-    label: "{{ intent }} {{ item.vlan.name }} vlan pool to {{ item.name }} domain"
+    label: "{{ item.vlan.name }} vlan pool to {{ item.name }} domain ({{ intent }})"

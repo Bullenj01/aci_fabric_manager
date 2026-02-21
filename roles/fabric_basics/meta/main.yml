@@ -1,7 +1,7 @@
 galaxy_info:
   role_name: fabric_basics
   author: Jason Bullen
-  description: Equivalent to the getting started wizard in ACI 
+  description: Equivalent to the getting started wizard in ACI
 
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value
@@ -16,7 +16,7 @@ galaxy_info:
   # - CC-BY-4.0
   license: GPL-3.0-or-later
 
-  min_ansible_version: 2.9
+  min_ansible_version: "13.0"
 
   # If this a Container Enabled role, provide the minimum Ansible Container version.
   # min_ansible_container_version:
@@ -27,7 +27,7 @@ galaxy_info:
   # To view available platforms and versions (or releases), visit:
   # https://galaxy.ansible.com/api/v1/platforms/
   #
-  #platforms:
+  # platforms:
   # - name: Fedora
   #   versions:
   #   - all
